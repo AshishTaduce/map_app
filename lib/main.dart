@@ -96,11 +96,14 @@ class _GoogleMapsState extends State<GoogleMaps> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
       appBar: AppBar(
+        
         backgroundColor: darkMode ? Colors.white : Colors.black,
         centerTitle: true,
         title: Text('Sample Map App'),
       ),
+
       body: Column(
         children: <Widget>[
           Expanded(
