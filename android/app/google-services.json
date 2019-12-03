@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "194238354031",
+    "firebase_url": "https://map-demo-258217.firebaseio.com",
+    "project_id": "map-demo-258217",
+    "storage_bucket": "map-demo-258217.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194238354031:android:b509f60a0e6e17cdc5b39a",
+        "android_client_info": {
+          "package_name": "com.ashishteddy.map_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "194238354031-gbcth1vh3a45lq38lpq1l771pim4m3fb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVGQXB645mD7qLXXVTaIwj2qWPuPmQSwc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "194238354031-gbcth1vh3a45lq38lpq1l771pim4m3fb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

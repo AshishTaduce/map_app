@@ -1,223 +1,389 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:map_app/theme.dart';
+import 'package:provider/provider.dart';
+
+
 
 void main() => runApp(MyApp());
-bool darkMode = false;
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sample maps app',
-      theme: darkMode
-          ? ThemeData(
-              backgroundColor: Colors.black,
-              primarySwatch: Colors.green,
-            )
-          : ThemeData(
-              backgroundColor: Colors.white,
-              primarySwatch: Colors.blue,
-            ),
-      home: GoogleMaps(),
+    return ChangeNotifierProvider<ThemeChanger>(
+      builder: (_) => ThemeChanger(ThemeData.light()),
+      child: new MaterialAppWithThemeChanger(),
     );
   }
 }
 
-class GoogleMaps extends StatefulWidget {
+class MaterialAppWithThemeChanger extends StatelessWidget {
   @override
-  _GoogleMapsState createState() => _GoogleMapsState();
+  Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeChanger>(context);
+    return MaterialApp(
+      title: 'Sample Map App',
+      theme: theme.getTheme(),
+      home: TeddyMaps(
+      ),
+    );
+  }
 }
 
-class _GoogleMapsState extends State<GoogleMaps> {
-  int count = 1;
-  String locationText = 'Bangalore';
+class TeddyMaps extends StatefulWidget {
+  @override
+  _TeddyMapsState createState() => _TeddyMapsState();
+}
 
-  List locations = [
-    ['Bangalore', LatLng(12.9716, 77.5946)],
-    ['Bombay', LatLng(19.0760, 72.8777)],
-    ['Delhi', LatLng(28.7041, 77.1025)],
-    ['Chennai', LatLng(13.0827, 80.2707)],
-    ['Kolkata', LatLng(22.5726, 88.3639)],
-    ['Jaipur', LatLng(26.9124, 75.7873)],
-  ];
+class _TeddyMapsState extends State<TeddyMaps> {
 
-  GoogleMapController myController;
+  GoogleMapController mapController;
 
-  static LatLng _center = const LatLng(12.9716, 77.5946);
+  CameraPosition cameraPosition = CameraPosition(
+    target: LatLng(12.9716, 77.5946),
+    zoom: 15.0,
+  );
 
   Set<Marker> _markers = {};
 
+  _remove_marker(MarkerId input) {
+    _markers.removeWhere((Marker marker) => marker.markerId == input);
+  }
+
   void _onMapCreated(GoogleMapController controller) {
-    myController = controller;
-  }
-
-  LatLng _lastMapPosition = _center;
-
-  void _onCameraMove(CameraPosition position) {
-    _lastMapPosition = position.target;
-  }
-
-  void _locationOnPressed() {
-    if (count < locations.length) {
-      myController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-        target: locations[count][1],
-        zoom: 10,
-      )));
-      setState(() {
-        locationText = locations[count][0];
-        _center = locations[count][1];
-        count++;
-      });
-    } else {
-      count = 0;
-      _locationOnPressed();
-    }
-  }
-
-  void _onAddMarkerButtonPressed() {
     setState(() {
-      _markers.add(Marker(
-          markerId: MarkerId(_lastMapPosition.toString()),
-          position: _lastMapPosition,
-          infoWindow: InfoWindow(title: 'Location'),
-          icon: BitmapDescriptor.defaultMarker));
+      mapController = controller;
     });
   }
 
-  void _tileOnPressed(int index) {
-    myController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-      target: locations[index][1],
-      zoom: 8,
-    )));
+  LatLng _currentLocation = LatLng(12.9716, 77.5946);
+
+  void _onCameraMove(CameraPosition position) {
+    _currentLocation = position.target;
     setState(() {});
+  }
+
+  double _sliderValue = 15;
+  int markerID = 1;
+
+  void _markerButtonBluePressed() {
+    if (markerID == 12) {
+      print('More than 12 pins not supported');
+      return;
+    }
+
+    print('button pressed');
+    var marker = Marker(
+      markerId: MarkerId('marker_no_$markerID',),
+      onTap: _remove_marker(MarkerId('marker_no_$markerID'),),
+      position: _currentLocation,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure,),
+      infoWindow: InfoWindow(
+        title: 'Here is marker no. $markerID',
+        snippet: 'Max of 12 markers',
+      ),
+    );
+    _markers.add(marker);
+    markerID++;
+    setState(() {});
+  }
+
+  void _markerButtonRedPressed() {
+    if (markerID == 12) {
+      return;
+    }
+    print('button pressed');
+    var marker = Marker(
+        markerId: MarkerId('marker_no_$markerID'),
+        position: _currentLocation,
+        icon: BitmapDescriptor.defaultMarker,
+        infoWindow: InfoWindow(
+          title: 'Here is marker no. $markerID',
+          snippet: 'Maximum 12 markers allowed',
+        ),
+        rotation: 0
+    );
+    //_markers.add(marker);
+    _markers.add(marker);
+
+
+    markerID++;
+    setState(() {});
+  }
+
+  bool isMovingPosition = false;
+
+  void _switchMoving() {
+    isMovingPosition ? isMovingPosition = false : isMovingPosition = true;
+    setState(() {});
+  }
+
+  void _moveToMyPosition() async {
+    Position position;
+    print(_markers);
+    position = await Geolocator()
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    print('Location = $position');
+    mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(position.latitude, position.longitude),
+          zoom: 15,
+        ),
+      ),
+    );
+    _switchMoving();
+  }
+
+  @override
+  void initState() {
+    Geolocator().checkGeolocationPermissionStatus();
+    rootBundle.loadString('assets/map_style_light.txt').then((string) {
+      {
+        mapController.setMapStyle(string);
+      }
+    });
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    ThemeChanger _themeChanger = Provider.of<ThemeChanger>(context);
+    //var size = MediaQuery.of(context).size;
+    bool lightMode = _themeChanger.getTheme() == ThemeData.light();
     return Scaffold(
-
-      appBar: AppBar(
-        
-        backgroundColor: darkMode ? Colors.white : Colors.black,
-        centerTitle: true,
-        title: Text('Sample Map App'),
-      ),
-
-      body: Column(
+      drawer: Drawer(),
+      body: Stack(
         children: <Widget>[
-          Expanded(
-            flex: 35,
-            child: Stack(
-              children: <Widget>[
-                GoogleMap(
-                  onCameraMove: _onCameraMove,
-                  markers: _markers,
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: CameraPosition(
-                    target: _center,
-                    zoom: 11.0,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: Column(
-                      children: <Widget>[
-                        FloatingActionButton(
-                          onPressed: _onAddMarkerButtonPressed,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: Colors.white,
-                          child: Icon(
-                            Icons.add_location,
-                            size: 36,
-                            color: Colors.red,
-                          ),
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        FloatingActionButton(
-                          onPressed: _locationOnPressed,
-                          child: Icon(
-                            Icons.arrow_forward,
-                            color: Colors.blue,
-                            size: 36,
-                          ),
-                          backgroundColor: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FloatingActionButton.extended(
-                      onPressed: () {},
-                      label: Text(locationText),
-                      icon: Icon(Icons.my_location),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: double.infinity,
-            height: 2,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(50),
+          Positioned.fill(
+            child: GoogleMap(
+              onCameraMove: _onCameraMove,
+              markers: _markers,
+              onMapCreated: _onMapCreated,
+              zoomGesturesEnabled: true,
+              initialCameraPosition: CameraPosition(
+                target: LatLng(12.9716, 77.5946),
+                zoom: 15.0,
               ),
-            ),
-          ),
-          Expanded(
-            flex: 15,
-            child: Container(
-              width: double.infinity,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(150),
-              ),
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      _tileOnPressed(index);
-                      setState(() {
-                        count = index + 1;
-                        locationText = locations[index][0];
-                      });
+              mapType: MapType.normal,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: true,
+            ),),
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: EdgeInsets.all(30),
+              child: Container(
+                decoration: BoxDecoration(
+                    color: lightMode ? Colors.white : Colors.blueGrey,
+                    borderRadius: BorderRadius.all(Radius.circular(16))),
+                padding: EdgeInsets.all(5),
+                child: Row(children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.menu,
+                      color: lightMode ? Colors.grey : Colors.white70,
+                    ),
+                    onPressed: () {
+                      Scaffold.of(context).openDrawer();
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-                      child: Card(
-                        color: Colors.blueAccent,
-                        child: Column(
-                          children: <Widget>[
-                            ListTile(
-                              trailing: Icon(Icons.keyboard_arrow_right),
-                              title: Text(
-                                '${locations[index][0]}',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            )
-                          ],
+                  ),
+                  Expanded(
+                    child: Container(
+                      color: lightMode ? Colors.white : Colors.blueGrey,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: "Search",
+                          contentPadding: EdgeInsets.all(7),
                         ),
                       ),
                     ),
-                  );
-                },
-                itemCount: locations.length,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.search),
+                    onPressed: () => null,
+                  ),
+                ]),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                width: 300,
+                height: 50,
+
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: Colors.blue,
+                    inactiveTrackColor: Colors.black,
+                    trackHeight: 4.0,
+                    thumbColor: Colors.yellow,
+                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.0),
+                    overlayColor: Colors.green.withAlpha(50),
+                    overlayShape: RoundSliderOverlayShape(overlayRadius: 14.0),
+                  ),
+                  child: Slider(
+                      value: _sliderValue,
+                      min: 5,
+                      max: 20,
+                      divisions: 10,
+                      onChanged: (double changedValue) {
+                        setState(() {
+                          _sliderValue = changedValue;
+                          mapController.animateCamera(
+                              CameraUpdate.newCameraPosition(CameraPosition(
+                                target: LatLng(_currentLocation.latitude,
+                                    _currentLocation.longitude),
+                                zoom: changedValue,
+                              )));
+                        });
+                      }
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 150, 8, 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Column(
+                children: <Widget>[
+                  IconButton(
+                    icon: Icon(
+                      Icons.lightbulb_outline,
+                      color: lightMode ? Colors.black : Colors.yellow,
+                      size: 40,
+                    ),
+                    onPressed: () {
+                      lightMode
+                          ? _themeChanger.setTheme(ThemeData.dark())
+                          : _themeChanger.setTheme(ThemeData.light());
+                      lightMode
+                          ? rootBundle.loadString('assets/map_style_dark.txt')
+                          .then((string) {
+                        mapController.setMapStyle(string);
+                      })
+                          : rootBundle.loadString('assets/map_style_light.txt')
+                          .then((string) {
+                        mapController.setMapStyle(string);
+                      });
+                      setState(() {
+
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_location,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                    onPressed: _markerButtonRedPressed,
+                    color: Colors.white,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_location,
+                      color: Colors.blue,
+                      size: 40,
+                    ),
+                    onPressed: _markerButtonBluePressed,
+                    color: Colors.white,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.gps_fixed,
+                      color: Colors.blue,
+                      size: 40,
+                    ),
+                    onPressed: () {
+                      _switchMoving();
+                      _moveToMyPosition();
+                    },
+                    color: Colors.white,
+                  ),
+//                Container(
+//                  width: 50,
+//                  height: 300,
+//                  color: Colors.green,
+//                  child: Transform.rotate(
+//                    angle: (pi/2) - pi,
+//                    child: Slider(
+//                        inactiveColor: Colors.orange,
+//                        activeColor: Colors.white,
+//                        value: _sliderValue,
+//                        min: 0,
+//                        max: 35,
+//                        divisions: 35,
+//                        onChanged:(double changedValue){
+//                          setState(() {
+//                            _sliderValue = changedValue;
+//                            mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+//                              target: LatLng(_currentLocation.latitude, _currentLocation.longitude),
+//                              zoom: changedValue,
+//                            )));
+//                          });
+//                        }
+//                    ),
+//                  ),
+//                ),
+                ],
+              ),
+            ),
+          ),
+          Visibility(
+            visible: isMovingPosition,
+            child: Align(
+              alignment: Alignment.center,
+              child: Container(
+                color: Colors.white.withAlpha(100),
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  backgroundColor: Colors.white,
+                ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class LocationsSearch extends SearchDelegate<String> {
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    // TODO: implement buildActions
+    return null;
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    // TODO: implement buildLeading
+    return null;
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // TODO: implement buildResults
+    return null;
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    // TODO: implement buildSuggestions
+    return null;
   }
 }
