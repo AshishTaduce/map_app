@@ -5,8 +5,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:map_app/theme.dart';
 import 'package:provider/provider.dart';
 
-
-
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -14,6 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ThemeChanger>(
+      // ignore: deprecated_member_use
       builder: (_) => ThemeChanger(ThemeData.light()),
       child: new MaterialAppWithThemeChanger(),
     );
@@ -25,10 +24,10 @@ class MaterialAppWithThemeChanger extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Provider.of<ThemeChanger>(context);
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Sample Map App',
       theme: theme.getTheme(),
-      home: TeddyMaps(
-      ),
+      home: TeddyMaps(),
     );
   }
 }
@@ -39,7 +38,6 @@ class TeddyMaps extends StatefulWidget {
 }
 
 class _TeddyMapsState extends State<TeddyMaps> {
-
   GoogleMapController mapController;
 
   CameraPosition cameraPosition = CameraPosition(
@@ -50,7 +48,8 @@ class _TeddyMapsState extends State<TeddyMaps> {
   Set<Marker> _markers = {};
 
   _remove_marker(MarkerId input) {
-    _markers.removeWhere((Marker marker) => marker.markerId == input);
+    _markers = {};
+    setState(() {});
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -67,6 +66,7 @@ class _TeddyMapsState extends State<TeddyMaps> {
   }
 
   double _sliderValue = 15;
+
   int markerID = 1;
 
   void _markerButtonBluePressed() {
@@ -77,10 +77,14 @@ class _TeddyMapsState extends State<TeddyMaps> {
 
     print('button pressed');
     var marker = Marker(
-      markerId: MarkerId('marker_no_$markerID',),
-      onTap: _remove_marker(MarkerId('marker_no_$markerID'),),
+      markerId: MarkerId(
+        'marker_no_$markerID',
+      ),
+      onTap: null,
       position: _currentLocation,
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure,),
+      icon: BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueAzure,
+      ),
       infoWindow: InfoWindow(
         title: 'Here is marker no. $markerID',
         snippet: 'Max of 12 markers',
@@ -104,12 +108,9 @@ class _TeddyMapsState extends State<TeddyMaps> {
           title: 'Here is marker no. $markerID',
           snippet: 'Maximum 12 markers allowed',
         ),
-        rotation: 0
-    );
+        rotation: 0);
     //_markers.add(marker);
     _markers.add(marker);
-
-
     markerID++;
     setState(() {});
   }
@@ -155,6 +156,35 @@ class _TeddyMapsState extends State<TeddyMaps> {
     //var size = MediaQuery.of(context).size;
     bool lightMode = _themeChanger.getTheme() == ThemeData.light();
     return Scaffold(
+      appBar: AppBar(
+        leading: new Builder(builder: (context) {
+          return new IconButton(
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+            icon: Icon(
+              Icons.list, color: lightMode ? Colors.black54 : Colors.white70,),
+          );
+        }),
+        centerTitle: true,
+        backgroundColor: lightMode ? Colors.yellow : Colors.black54,
+        shape: RoundedRectangleBorder(),
+        elevation: 50,
+        title: Text(
+          'Go Roam!',
+          style: TextStyle(
+              fontSize: 28, color: lightMode ? Colors.black : Colors.white),
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.search,
+              color: lightMode ? Colors.black54 : Colors.white70,),
+            onPressed: () {
+              showSearch(context: context, delegate: LocationsSearch());
+            },
+          )
+        ],
+      ),
       drawer: Drawer(),
       body: Stack(
         children: <Widget>[
@@ -163,51 +193,13 @@ class _TeddyMapsState extends State<TeddyMaps> {
               onCameraMove: _onCameraMove,
               markers: _markers,
               onMapCreated: _onMapCreated,
-              zoomGesturesEnabled: true,
               initialCameraPosition: CameraPosition(
                 target: LatLng(12.9716, 77.5946),
                 zoom: 15.0,
               ),
               mapType: MapType.normal,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-            ),),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: EdgeInsets.all(30),
-              child: Container(
-                decoration: BoxDecoration(
-                    color: lightMode ? Colors.white : Colors.blueGrey,
-                    borderRadius: BorderRadius.all(Radius.circular(16))),
-                padding: EdgeInsets.all(5),
-                child: Row(children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.menu,
-                      color: lightMode ? Colors.grey : Colors.white70,
-                    ),
-                    onPressed: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                  ),
-                  Expanded(
-                    child: Container(
-                      color: lightMode ? Colors.white : Colors.blueGrey,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: "Search",
-                          contentPadding: EdgeInsets.all(7),
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.search),
-                    onPressed: () => null,
-                  ),
-                ]),
-              ),
+              //myLocationEnabled: true,
+              //myLocationButtonEnabled: true,
             ),
           ),
           Padding(
@@ -221,7 +213,6 @@ class _TeddyMapsState extends State<TeddyMaps> {
                 ),
                 width: 300,
                 height: 50,
-
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     activeTrackColor: Colors.blue,
@@ -247,8 +238,7 @@ class _TeddyMapsState extends State<TeddyMaps> {
                                 zoom: changedValue,
                               )));
                         });
-                      }
-                  ),
+                      }),
                 ),
               ),
             ),
@@ -259,59 +249,89 @@ class _TeddyMapsState extends State<TeddyMaps> {
               alignment: Alignment.centerRight,
               child: Column(
                 children: <Widget>[
-                  IconButton(
-                    icon: Icon(
-                      Icons.lightbulb_outline,
-                      color: lightMode ? Colors.black : Colors.yellow,
-                      size: 40,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ClipOval(
+                      child: Container(
+                        color: lightMode ? Colors.white70 : Colors.blueGrey,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.lightbulb_outline,
+                            color: lightMode ? Colors.black : Colors.yellow,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            lightMode
+                                ? _themeChanger.setTheme(ThemeData.dark())
+                                : _themeChanger.setTheme(ThemeData.light());
+                            lightMode
+                                ? rootBundle
+                                .loadString('assets/map_style_dark.txt')
+                                .then((string) {
+                              mapController.setMapStyle(string);
+                            })
+                                : rootBundle
+                                .loadString('assets/map_style_light.txt')
+                                .then((string) {
+                              mapController.setMapStyle(string);
+                            });
+                            setState(() {});
+                          },
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      lightMode
-                          ? _themeChanger.setTheme(ThemeData.dark())
-                          : _themeChanger.setTheme(ThemeData.light());
-                      lightMode
-                          ? rootBundle.loadString('assets/map_style_dark.txt')
-                          .then((string) {
-                        mapController.setMapStyle(string);
-                      })
-                          : rootBundle.loadString('assets/map_style_light.txt')
-                          .then((string) {
-                        mapController.setMapStyle(string);
-                      });
-                      setState(() {
-
-                      });
-                    },
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.add_location,
-                      color: Colors.red,
-                      size: 40,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ClipOval(
+                      child: Container(
+                        color: lightMode ? Colors.white70 : Colors.blueGrey,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.location_on,
+                            color: Colors.redAccent,
+                            size: 32,
+                          ),
+                          onPressed: _markerButtonRedPressed,
+                        ),
+                      ),
                     ),
-                    onPressed: _markerButtonRedPressed,
-                    color: Colors.white,
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.add_location,
-                      color: Colors.blue,
-                      size: 40,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ClipOval(
+                      child: Container(
+                        color: lightMode ? Colors.white70 : Colors.blueGrey,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.location_on,
+                            color: Colors.blueAccent,
+                            size: 32,
+                          ),
+                          onPressed: _markerButtonBluePressed,
+                        ),
+                      ),
                     ),
-                    onPressed: _markerButtonBluePressed,
-                    color: Colors.white,
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.gps_fixed,
-                      color: Colors.blue,
-                      size: 40,
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ClipOval(
+                      child: Container(
+                        color: lightMode ? Colors.white70 : Colors.blueGrey,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.gps_fixed,
+                            color: lightMode ? Colors.grey : Colors.white,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            _switchMoving();
+                            _moveToMyPosition();
+                          },
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      _switchMoving();
-                      _moveToMyPosition();
-                    },
-                    color: Colors.white,
                   ),
 //                Container(
 //                  width: 50,
@@ -366,24 +386,35 @@ class LocationsSearch extends SearchDelegate<String> {
   @override
   List<Widget> buildActions(BuildContext context) {
     // TODO: implement buildActions
-    return null;
+    return [IconButton(
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        query = '';
+      },
+    )
+    ];
   }
 
   @override
   Widget buildLeading(BuildContext context) {
     // TODO: implement buildLeading
-    return null;
+    return IconButton(
+      icon: Icon(Icons.close),
+      onPressed: () {
+        close(context, null);
+      },
+    );
   }
 
   @override
   Widget buildResults(BuildContext context) {
     // TODO: implement buildResults
-    return null;
+    return Container();
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     // TODO: implement buildSuggestions
-    return null;
+    return Container();
   }
 }
