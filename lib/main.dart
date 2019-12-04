@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart';
 import 'package:map_app/theme.dart';
 import 'package:provider/provider.dart';
+
+import 'city_helper.dart';
 
 void main() => runApp(MyApp());
 
@@ -46,11 +49,6 @@ class _TeddyMapsState extends State<TeddyMaps> {
   );
 
   Set<Marker> _markers = {};
-
-  _remove_marker(MarkerId input) {
-    _markers = {};
-    setState(() {});
-  }
 
   void _onMapCreated(GoogleMapController controller) {
     setState(() {
@@ -139,14 +137,22 @@ class _TeddyMapsState extends State<TeddyMaps> {
     _switchMoving();
   }
 
+  List<Cities> cities = [];
+  Client client;
+
+  void getCitiesFromJSON(client) async {
+    cities = await fetchCities(client);
+  }
+
   @override
   void initState() {
     Geolocator().checkGeolocationPermissionStatus();
-    rootBundle.loadString('assets/map_style_light.txt').then((string) {
-      {
-        mapController.setMapStyle(string);
-      }
-    });
+//    rootBundle.loadString('assets/map_style_light.txt').then((string) {
+//      {
+//        mapController.setMapStyle(string);
+//      }
+//    });
+    getCitiesFromJSON(client);
     super.initState();
   }
 
@@ -163,7 +169,9 @@ class _TeddyMapsState extends State<TeddyMaps> {
               Scaffold.of(context).openDrawer();
             },
             icon: Icon(
-              Icons.list, color: lightMode ? Colors.black54 : Colors.white70,),
+              Icons.list,
+              color: lightMode ? Colors.black54 : Colors.white70,
+            ),
           );
         }),
         centerTitle: true,
@@ -177,10 +185,20 @@ class _TeddyMapsState extends State<TeddyMaps> {
         ),
         actions: <Widget>[
           IconButton(
-            icon: Icon(Icons.search,
-              color: lightMode ? Colors.black54 : Colors.white70,),
+            icon: Icon(
+              Icons.search,
+              color: lightMode ? Colors.black54 : Colors.white70,
+            ),
             onPressed: () {
-              showSearch(context: context, delegate: LocationsSearch());
+              cities.isEmpty ? CircularProgressIndicator() : showSearch(
+                  context: context,
+                  delegate: LocationsSearch(
+                    themeDATA: lightMode ? ThemeData.light() : ThemeData.dark(),
+                    citiesList: cities,
+                  ));
+              setState(() {
+
+              });
             },
           )
         ],
@@ -191,11 +209,12 @@ class _TeddyMapsState extends State<TeddyMaps> {
           Positioned.fill(
             child: GoogleMap(
               onCameraMove: _onCameraMove,
+              zoomGesturesEnabled: false,
               markers: _markers,
               onMapCreated: _onMapCreated,
               initialCameraPosition: CameraPosition(
                 target: LatLng(12.9716, 77.5946),
-                zoom: 15.0,
+                zoom: _sliderValue,
               ),
               mapType: MapType.normal,
               //myLocationEnabled: true,
@@ -208,17 +227,18 @@ class _TeddyMapsState extends State<TeddyMaps> {
               alignment: Alignment.bottomCenter,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: lightMode ? Colors.yellow : Colors.indigo,
                   borderRadius: BorderRadius.all(Radius.circular(16)),
                 ),
                 width: 300,
                 height: 50,
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: Colors.blue,
-                    inactiveTrackColor: Colors.black,
+                    activeTrackColor:
+                    lightMode ? Colors.black87 : Colors.yellow,
+                    inactiveTrackColor: lightMode ? Colors.white : Colors.white,
                     trackHeight: 4.0,
-                    thumbColor: Colors.yellow,
+                    thumbColor: lightMode ? Colors.blue : Colors.teal,
                     thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.0),
                     overlayColor: Colors.green.withAlpha(50),
                     overlayShape: RoundSliderOverlayShape(overlayRadius: 14.0),
@@ -333,31 +353,6 @@ class _TeddyMapsState extends State<TeddyMaps> {
                       ),
                     ),
                   ),
-//                Container(
-//                  width: 50,
-//                  height: 300,
-//                  color: Colors.green,
-//                  child: Transform.rotate(
-//                    angle: (pi/2) - pi,
-//                    child: Slider(
-//                        inactiveColor: Colors.orange,
-//                        activeColor: Colors.white,
-//                        value: _sliderValue,
-//                        min: 0,
-//                        max: 35,
-//                        divisions: 35,
-//                        onChanged:(double changedValue){
-//                          setState(() {
-//                            _sliderValue = changedValue;
-//                            mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-//                              target: LatLng(_currentLocation.latitude, _currentLocation.longitude),
-//                              zoom: changedValue,
-//                            )));
-//                          });
-//                        }
-//                    ),
-//                  ),
-//                ),
                 ],
               ),
             ),
@@ -383,15 +378,25 @@ class _TeddyMapsState extends State<TeddyMaps> {
 }
 
 class LocationsSearch extends SearchDelegate<String> {
+  LocationsSearch({@required this.themeDATA, @required this.citiesList,
+//  @required
+    this.moveCamera
+  });
+
+  final ThemeData themeDATA;
+  final List<Cities> citiesList;
+  final Function moveCamera;
+
   @override
   List<Widget> buildActions(BuildContext context) {
     // TODO: implement buildActions
-    return [IconButton(
-      icon: Icon(Icons.arrow_back),
-      onPressed: () {
-        query = '';
-      },
-    )
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
+      )
     ];
   }
 
@@ -399,7 +404,7 @@ class LocationsSearch extends SearchDelegate<String> {
   Widget buildLeading(BuildContext context) {
     // TODO: implement buildLeading
     return IconButton(
-      icon: Icon(Icons.close),
+      icon: Icon(Icons.arrow_back),
       onPressed: () {
         close(context, null);
       },
@@ -407,14 +412,64 @@ class LocationsSearch extends SearchDelegate<String> {
   }
 
   @override
+  ThemeData appBarTheme(BuildContext context) {
+    assert(context != null);
+    final ThemeData theme = themeDATA;
+    assert(theme != null);
+    return theme;
+  }
+
   Widget buildResults(BuildContext context) {
+    List<Cities> results = citiesList
+        .where(
+            (cityName) =>
+            cityName.name.toLowerCase().contains(query.toLowerCase()))
+        .toList();
     // TODO: implement buildResults
-    return Container();
+    return Container(
+      child: AnimatedList(
+          initialItemCount: citiesList.length,
+          padding: EdgeInsets.all(8),
+          itemBuilder: (context, index, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ListTile(
+                onTap: () {
+                  double lat = results[index].latitide;
+                  double lng = results[index].latitide;
+                  print('$lat $lng');
+                },
+                dense: true,
+                title: Text(results[index].name),
+              ),
+            );
+          }),
+    );
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    List<Cities> results = citiesList.toList();
+
     // TODO: implement buildSuggestions
-    return Container();
+    return Container(
+      child: AnimatedList(
+          initialItemCount: citiesList.length,
+          padding: EdgeInsets.all(8),
+          itemBuilder: (context, index, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ListTile(
+                onTap: () {
+                  double lat = results[index].latitide;
+                  double lng = results[index].latitide;
+                  print('$lat $lng');
+                },
+                dense: true,
+                title: Text(results[index].name),
+              ),
+            );
+          }),
+    );
   }
 }
