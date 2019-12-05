@@ -45,6 +45,7 @@ flutter:
     #  assets:
     - assets/map_style_dark.txt
     - assets/map_style_light.txt
+    - assets/cities.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

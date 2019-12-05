@@ -1,8 +1,4 @@
-import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:http/http.dart';
 
 class Cities {
   String name;
@@ -14,8 +10,8 @@ class Cities {
   factory Cities.fromJson(Map<String, dynamic> json){
     return Cities(
       name: json['name'],
-      latitide: json['lat'],
-      longitude: json['lng'],
+      latitide: double.parse(json['lat']),
+      longitude: double.parse(json['lng']),
     );
   }
 
@@ -27,25 +23,35 @@ class Cities {
   }
 }
 
-List<Cities> parseCities(String responseBody) {
-  final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
-  return parsed.map<Cities>((json) => Cities.fromJson(json)).toList();
-}
-
-String citiesJson = '';
-
-void loadAsset() async {
-  citiesJson = await rootBundle.loadString('assets/cities.json');
-}
-
-List<Cities> fetchCities(Client client) {
-//  final response =
+//List<Cities> parseCities(String responseBody) {
+//  final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
+//
+//  return parsed.map<Cities>((json) => Cities.fromJson(json)).toList();
+//}
+//
+//
+//Future<String> loadAsset() async {
+//  return await rootBundle.loadString('assets/cities.json');
+//}
+//
+//Future<List<Cities>> fetchCities(Client client) async {
+//    final response =
 //  await client.get(
 //    'https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',);
-  // Use the compute function to run parsePhotos in a separate isolate.
-
-  return compute(parseCities(),
-      citiesJson
+//   Use the compute function to run parsePhotos in a separate isolate.
+//  return await compute(
+//      parseCities,
+////      loadAsset()
 //      response.body
-  );
-}
+//  );
+//}
+
+//void main()async{
+//  String abcd = await loadAsset();
+////  Map jsonMap = json.decode(abcd).cast<Map<String, dynamic>>();
+//  List<Cities> a = [];
+//  final parsed = json.decode(abcd).cast<Map<String, dynamic>>();
+//
+//  var x = parsed.map<Cities>((json) => Cities.fromJson(json)).toList();
+//  print (x);
+//}

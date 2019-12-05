@@ -45,6 +45,18 @@ class TeddyMaps extends StatefulWidget {
 class _TeddyMapsState extends State<TeddyMaps> {
   GoogleMapController mapController;
 
+  List<Cities> cityList = [];
+
+  void getCity() async {
+    print('reached getCity');
+    List parsedJson =
+    json.decode(await rootBundle.loadString('assets/cities.json'));
+    print(parsedJson is List);
+    for (dynamic x in parsedJson) {
+      cityList.add((Cities.fromJson(x)));
+    }
+  }
+
   CameraPosition cameraPosition = CameraPosition(
     target: LatLng(12.9716, 77.5946),
     zoom: 15.0,
@@ -139,22 +151,15 @@ class _TeddyMapsState extends State<TeddyMaps> {
     _switchMoving();
   }
 
+  var searchResult = [];
+
   List<Cities> cities = [];
   Client client;
-
-  void getCitiesFromJSON(client) async {
-    cities = await fetchCities(client);
-  }
 
   @override
   void initState() {
     Geolocator().checkGeolocationPermissionStatus();
-//    rootBundle.loadString('assets/map_style_light.txt').then((string) {
-//      {
-//        mapController.setMapStyle(string);
-//      }
-//    });
-    getCitiesFromJSON(client);
+    getCity();
     super.initState();
   }
 
@@ -191,13 +196,26 @@ class _TeddyMapsState extends State<TeddyMaps> {
               Icons.search,
               color: lightMode ? Colors.black54 : Colors.white70,
             ),
-            onPressed: () {
-              showSearch(
+            onPressed: () async {
+              final String resultCity = await showSearch(
                   context: context,
                   delegate: LocationsSearch(
-                    themeDATA: lightMode ? ThemeData.light() : ThemeData.dark(),
-                    citiesList: cities,
+                    cityList: cityList,
+                    themeDATA: lightMode,
                   ));
+              List<String> temp = resultCity.split(' ').toList();
+              _switchMoving();
+              await mapController.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                      target: LatLng(
+                        double.parse(temp[0]),
+                        double.parse(temp[1]),
+                      ),
+                      zoom: 15),
+                ),
+              );
+              _switchMoving();
               setState(() {});
             },
           )
@@ -338,17 +356,24 @@ class _TeddyMapsState extends State<TeddyMaps> {
                     child: ClipOval(
                       child: Container(
                         color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.gps_fixed,
-                            color: lightMode ? Colors.grey : Colors.white,
-                            size: 32,
-                          ),
-                          onPressed: () {
-                            _switchMoving();
-                            _moveToMyPosition();
-                          },
-                          color: Colors.white,
+                        child: ToggleButtons(
+//                          icon: Icon(
+//                            Icons.gps_fixed,
+//                            color: lightMode ? Colors.grey : Colors.white,
+//                            size: 32,
+//                          ),
+//                          onPressed: () {
+//                            _switchMoving();
+//                            _moveToMyPosition();
+//                          },
+//                          color: Colors.white,
+                          children: <Widget>[
+                            Icon(Icons.gps_fixed)
+                          ],
+                          color: lightMode ? Colors.red : Colors.white70,
+                          borderColor: lightMode ? Colors.yellowAccent : Colors
+                              .white30,
+                          isSelected: [false],
                         ),
                       ),
                     ),
@@ -378,14 +403,26 @@ class _TeddyMapsState extends State<TeddyMaps> {
 }
 
 class LocationsSearch extends SearchDelegate<String> {
-  LocationsSearch({@required this.themeDATA,
-    @required this.citiesList,
-//  @required
-    this.moveCamera});
+  LocationsSearch({
+    @required this.themeDATA,
+    @required this.cityList,
+  });
 
-  final ThemeData themeDATA;
-  final List<Cities> citiesList;
-  final Function moveCamera;
+  final List<Cities> cityList;
+  final bool themeDATA;
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    assert(context != null);
+    final ThemeData theme = themeDATA
+        ? ThemeData(
+      accentColor: Colors.black,
+      primaryColor: Colors.yellow,
+    )
+        : ThemeData.dark();
+    assert(theme != null);
+    return theme;
+  }
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -412,64 +449,54 @@ class LocationsSearch extends SearchDelegate<String> {
   }
 
   @override
-  ThemeData appBarTheme(BuildContext context) {
-    assert(context != null);
-    final ThemeData theme = themeDATA;
-    assert(theme != null);
-    return theme;
-  }
-
   Widget buildResults(BuildContext context) {
-    List<Cities> results = citiesList
-        .where((cityName) =>
-        cityName.name.toLowerCase().contains(query.toLowerCase()))
+    List<Cities> results = cityList
+        .where((cityName) => cityName.name.toLowerCase().contains(query))
         .toList();
-    // TODO: implement buildResults
+
     return Container(
-      child: AnimatedList(
-          initialItemCount: citiesList.length,
-          padding: EdgeInsets.all(8),
-          itemBuilder: (context, index, animation) {
-            return ListTile(
-              onTap: () {
-                double lat = results[index].latitide;
-                double lng = results[index].latitide;
-                print('$lat $lng');
-              },
-              dense: true,
-              title: Text(results[index].name),
-            );
-          }),
+      child: ListView.builder(
+        itemCount: results.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            onTap: () {
+              close(context,
+                  '${results[index].latitide} ${results[index].longitude}');
+            },
+            dense: true,
+            title: Text(
+              results[index].name,
+            ),
+            subtitle: Text(
+                '${results[index].latitide} + ${results[index].longitude}'),
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    List<Cities> results = citiesList.toList();
-
     // TODO: implement buildSuggestions
     return Container(
-        child: FutureBuilder(
-            future: DefaultAssetBundle.of(context)
-                .loadString('data_repo/starwars_data.json'),
-            builder: (context, snapshot) {
-              // Decode the JSON
-              var new_data = json.decode(snapshot.data.toString());
-
-              return AnimatedList(
-                  initialItemCount: citiesList.length,
-                  padding: EdgeInsets.all(8),
-                  itemBuilder: (context, index, animation) {
-                    return ListTile(
-                      onTap: () {
-                        double lat = results[index].latitide;
-                        double lng = results[index].latitide;
-                        print('$lat $lng');
-                      },
-                      dense: true,
-                      title: Text(results[index].name),
-                    );
-                  });
-            }));
+      child: ListView.builder(
+        itemCount: cityList.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            onTap: () {
+              close(context,
+                  '${cityList[index].latitide} ${cityList[index].longitude}');
+            },
+            dense: true,
+            title: Text(
+              cityList[index].name,
+              textAlign: TextAlign.left,
+            ),
+            subtitle: Text(
+                '${cityList[index].latitide} + ${cityList[index].longitude}'),
+          );
+        },
+      ),
+    );
   }
 }
