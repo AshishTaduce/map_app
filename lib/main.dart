@@ -1,11 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart';
 import 'package:map_app/theme.dart';
 import 'package:provider/provider.dart';
 
@@ -38,6 +39,7 @@ class MaterialAppWithThemeChanger extends StatelessWidget {
   }
 }
 
+///Todo: Implement Toggle button instead of IconButton
 class TeddyMaps extends StatefulWidget {
   @override
   _TeddyMapsState createState() => _TeddyMapsState();
@@ -48,34 +50,37 @@ class _TeddyMapsState extends State<TeddyMaps> {
 
   List<Cities> cityList = [];
 
-  void parseCity(List result) async {
-    List parsedJson =
-    json.decode(await rootBundle.loadString('assets/cities.json'));
-    print('reached getCity');
-    print(parsedJson);
-    List copy = List.from(parsedJson);
-//    List parsedJson =
-//    json.decode(await rootBundle.loadString('assets/cities.json'));
-    print(copy is List);
-    for (dynamic x in copy) {
-      cityList.add((Cities.fromJson(x)));
-    }
+  bool isMovingPosition = false;
 
-  }
+  double _sliderValue = 15;
 
-  Future<void> fetchCities() async {
-    List result = [];
+  int markerID = 1;
 
-    // Use the compute function to run parsePhotos in a separate isolate.
-    return compute(parseCity, result);
-  }
+  Set<Marker> _markers = {};
+
+  LatLng _currentLocation = LatLng(12.9716, 77.5946);
 
   CameraPosition cameraPosition = CameraPosition(
     target: LatLng(12.9716, 77.5946),
     zoom: 15.0,
   );
 
-  Set<Marker> _markers = {};
+  FutureOr parseCity() async {
+    print('reached getCity');
+    List parsedJson =
+    json.decode(await rootBundle.loadString('assets/cities.json'));
+    print('decoded JSON');
+    print(parsedJson);
+    List copy = List.from(parsedJson);
+    print(copy is List);
+    for (dynamic x in copy) {
+      cityList.add((Cities.fromJson(x)));
+    }
+  }
+
+  Future<void> fetchCities() async {
+    return Isolate.spawn(parseCity(), null);
+  }
 
   void _onMapCreated(GoogleMapController controller) {
     setState(() {
@@ -83,16 +88,10 @@ class _TeddyMapsState extends State<TeddyMaps> {
     });
   }
 
-  LatLng _currentLocation = LatLng(12.9716, 77.5946);
-
   void _onCameraMove(CameraPosition position) {
     _currentLocation = position.target;
     setState(() {});
   }
-
-  double _sliderValue = 15;
-
-  int markerID = 1;
 
   void _markerButtonBluePressed() {
     if (markerID == 12) {
@@ -140,8 +139,6 @@ class _TeddyMapsState extends State<TeddyMaps> {
     setState(() {});
   }
 
-  bool isMovingPosition = false;
-
   void _switchMoving() {
     isMovingPosition ? isMovingPosition = false : isMovingPosition = true;
     setState(() {});
@@ -163,22 +160,22 @@ class _TeddyMapsState extends State<TeddyMaps> {
     );
   }
 
-  var searchResult = [];
+//  var searchResult = [];
 
-  List<Cities> cities = [];
-  Client client;
+//  List<Cities> cities = [];
+//  Client client;
 
   @override
   void initState() {
     Geolocator().checkGeolocationPermissionStatus();
     fetchCities();
+//    Isolate.spawn(parseCity(), null);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     ThemeChanger _themeChanger = Provider.of<ThemeChanger>(context);
-    //var size = MediaQuery.of(context).size;
     bool lightMode = _themeChanger.getTheme() == ThemeData.light();
     return Scaffold(
       appBar: AppBar(
@@ -450,14 +447,16 @@ class LocationsSearch extends SearchDelegate<String> {
         .where((cityName) => cityName.name.toLowerCase().contains(query))
         .toList();
 
-    return Container(
+    return cityList.isEmpty
+        ? Center(child: CircularProgressIndicator(),)
+        : Container(
       child: ListView.builder(
         itemCount: results.length,
         itemBuilder: (context, index) {
           return ListTile(
             onTap: () {
               close(context,
-                  '${results[index].latitide} ${results[index].longitude}');
+                '${results[index].latitide} ${results[index].longitude}',);
             },
             dense: true,
             title: Text(
@@ -474,7 +473,9 @@ class LocationsSearch extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     // TODO: implement buildSuggestions
-    return Container(
+    return cityList.isEmpty
+        ? Center(child: CircularProgressIndicator(),)
+        : Container(
       child: ListView.builder(
         itemCount: cityList.length,
         itemBuilder: (context, index) {

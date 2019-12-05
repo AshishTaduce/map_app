@@ -1,5 +1,3 @@
-
-
 class Cities {
   String name;
   double latitide;
@@ -22,6 +20,7 @@ class Cities {
     return Cities;
   }
 }
+
 
 //List<Cities> parseCities(String responseBody) {
 //  final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
