@@ -1,7 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart';
@@ -47,14 +48,26 @@ class _TeddyMapsState extends State<TeddyMaps> {
 
   List<Cities> cityList = [];
 
-  void getCity() async {
-    print('reached getCity');
+  void parseCity(List result) async {
     List parsedJson =
     json.decode(await rootBundle.loadString('assets/cities.json'));
-    print(parsedJson is List);
-    for (dynamic x in parsedJson) {
+    print('reached getCity');
+    print(parsedJson);
+    List copy = List.from(parsedJson);
+//    List parsedJson =
+//    json.decode(await rootBundle.loadString('assets/cities.json'));
+    print(copy is List);
+    for (dynamic x in copy) {
       cityList.add((Cities.fromJson(x)));
     }
+
+  }
+
+  Future<void> fetchCities() async {
+    List result = [];
+
+    // Use the compute function to run parsePhotos in a separate isolate.
+    return compute(parseCity, result);
   }
 
   CameraPosition cameraPosition = CameraPosition(
@@ -148,7 +161,6 @@ class _TeddyMapsState extends State<TeddyMaps> {
         ),
       ),
     );
-    _switchMoving();
   }
 
   var searchResult = [];
@@ -159,7 +171,7 @@ class _TeddyMapsState extends State<TeddyMaps> {
   @override
   void initState() {
     Geolocator().checkGeolocationPermissionStatus();
-    getCity();
+    fetchCities();
     super.initState();
   }
 
@@ -356,25 +368,9 @@ class _TeddyMapsState extends State<TeddyMaps> {
                     child: ClipOval(
                       child: Container(
                         color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: ToggleButtons(
-//                          icon: Icon(
-//                            Icons.gps_fixed,
-//                            color: lightMode ? Colors.grey : Colors.white,
-//                            size: 32,
-//                          ),
-//                          onPressed: () {
-//                            _switchMoving();
-//                            _moveToMyPosition();
-//                          },
-//                          color: Colors.white,
-                          children: <Widget>[
-                            Icon(Icons.gps_fixed)
-                          ],
-                          color: lightMode ? Colors.red : Colors.white70,
-                          borderColor: lightMode ? Colors.yellowAccent : Colors
-                              .white30,
-                          isSelected: [false],
-                        ),
+                        child: IconButton(icon: Icon(Icons.gps_fixed,
+                          color: lightMode ? Colors.black87 : Colors.white,),
+                          onPressed: _moveToMyPosition,),
                       ),
                     ),
                   ),
