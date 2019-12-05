@@ -16,6 +16,10 @@ dependencies:
   firebase_auth: ^0.14.0+5
   cloud_firestore: ^0.12.9+5
   provider:
+  http:
+  flutter_isolate: ^1.0.0+10
+
+
 
 
 dev_dependencies:

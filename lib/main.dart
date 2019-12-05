@@ -190,14 +190,13 @@ class _TeddyMapsState extends State<TeddyMaps> {
               color: lightMode ? Colors.black54 : Colors.white70,
             ),
             onPressed: () {
-              cities.isEmpty ? CircularProgressIndicator() : showSearch(
+              showSearch(
                   context: context,
                   delegate: LocationsSearch(
                     themeDATA: lightMode ? ThemeData.light() : ThemeData.dark(),
                     citiesList: cities,
                   ));
               setState(() {
-
               });
             },
           )
@@ -431,17 +430,14 @@ class LocationsSearch extends SearchDelegate<String> {
           initialItemCount: citiesList.length,
           padding: EdgeInsets.all(8),
           itemBuilder: (context, index, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: ListTile(
-                onTap: () {
-                  double lat = results[index].latitide;
-                  double lng = results[index].latitide;
-                  print('$lat $lng');
-                },
-                dense: true,
-                title: Text(results[index].name),
-              ),
+            return ListTile(
+              onTap: () {
+                double lat = results[index].latitide;
+                double lng = results[index].latitide;
+                print('$lat $lng');
+              },
+              dense: true,
+              title: Text(results[index].name),
             );
           }),
     );
@@ -456,18 +452,16 @@ class LocationsSearch extends SearchDelegate<String> {
       child: AnimatedList(
           initialItemCount: citiesList.length,
           padding: EdgeInsets.all(8),
-          itemBuilder: (context, index, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: ListTile(
-                onTap: () {
-                  double lat = results[index].latitide;
-                  double lng = results[index].latitide;
-                  print('$lat $lng');
-                },
-                dense: true,
-                title: Text(results[index].name),
-              ),
+          itemBuilder: (context, index,
+              animation) {
+            return ListTile(
+              onTap: () {
+                double lat = results[index].latitide;
+                double lng = results[index].latitide;
+                print('$lat $lng');
+              },
+              dense: true,
+              title: Text(results[index].name),
             );
           }),
     );

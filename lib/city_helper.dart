@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart';
 
 class Cities {
@@ -26,22 +27,23 @@ class Cities {
   }
 }
 
-Future<Response> getCities(Client client) async {
-  return client.get(
-    'https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',
-  );
-}
-
 List<Cities> parseCities(String responseBody) {
   final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
 
   return parsed.map<Cities>((json) => Cities.fromJson(json)).toList();
 }
 
+Future<String> loadAsset() async {
+  return await rootBundle.loadString('assets/cities.json');
+}
+
 Future<List<Cities>> fetchCities(Client client) async {
-  final response =
-  await client.get(
-    'https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',);
+//  final response =
+//  await client.get(
+//    'https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',);
   // Use the compute function to run parsePhotos in a separate isolate.
-  return compute(parseCities, response.body);
+  return compute(parseCities,
+      await loadAsset()
+//      response.body
+  );
 }
