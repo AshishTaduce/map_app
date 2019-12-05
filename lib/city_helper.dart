@@ -29,21 +29,23 @@ class Cities {
 
 List<Cities> parseCities(String responseBody) {
   final parsed = json.decode(responseBody).cast<Map<String, dynamic>>();
-
   return parsed.map<Cities>((json) => Cities.fromJson(json)).toList();
 }
 
-Future<String> loadAsset() async {
-  return await rootBundle.loadString('assets/cities.json');
+String citiesJson = '';
+
+void loadAsset() async {
+  citiesJson = await rootBundle.loadString('assets/cities.json');
 }
 
-Future<List<Cities>> fetchCities(Client client) async {
+List<Cities> fetchCities(Client client) {
 //  final response =
 //  await client.get(
 //    'https://raw.githubusercontent.com/lutangar/cities.json/master/cities.json',);
   // Use the compute function to run parsePhotos in a separate isolate.
-  return compute(parseCities,
-      await loadAsset()
+
+  return compute(parseCities(),
+      citiesJson
 //      response.body
   );
 }

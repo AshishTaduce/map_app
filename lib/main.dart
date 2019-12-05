@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:geolocator/geolocator.dart';
@@ -196,8 +198,7 @@ class _TeddyMapsState extends State<TeddyMaps> {
                     themeDATA: lightMode ? ThemeData.light() : ThemeData.dark(),
                     citiesList: cities,
                   ));
-              setState(() {
-              });
+              setState(() {});
             },
           )
         ],
@@ -377,10 +378,10 @@ class _TeddyMapsState extends State<TeddyMaps> {
 }
 
 class LocationsSearch extends SearchDelegate<String> {
-  LocationsSearch({@required this.themeDATA, @required this.citiesList,
+  LocationsSearch({@required this.themeDATA,
+    @required this.citiesList,
 //  @required
-    this.moveCamera
-  });
+    this.moveCamera});
 
   final ThemeData themeDATA;
   final List<Cities> citiesList;
@@ -420,9 +421,8 @@ class LocationsSearch extends SearchDelegate<String> {
 
   Widget buildResults(BuildContext context) {
     List<Cities> results = citiesList
-        .where(
-            (cityName) =>
-            cityName.name.toLowerCase().contains(query.toLowerCase()))
+        .where((cityName) =>
+        cityName.name.toLowerCase().contains(query.toLowerCase()))
         .toList();
     // TODO: implement buildResults
     return Container(
@@ -449,21 +449,27 @@ class LocationsSearch extends SearchDelegate<String> {
 
     // TODO: implement buildSuggestions
     return Container(
-      child: AnimatedList(
-          initialItemCount: citiesList.length,
-          padding: EdgeInsets.all(8),
-          itemBuilder: (context, index,
-              animation) {
-            return ListTile(
-              onTap: () {
-                double lat = results[index].latitide;
-                double lng = results[index].latitide;
-                print('$lat $lng');
-              },
-              dense: true,
-              title: Text(results[index].name),
-            );
-          }),
-    );
+        child: FutureBuilder(
+            future: DefaultAssetBundle.of(context)
+                .loadString('data_repo/starwars_data.json'),
+            builder: (context, snapshot) {
+              // Decode the JSON
+              var new_data = json.decode(snapshot.data.toString());
+
+              return AnimatedList(
+                  initialItemCount: citiesList.length,
+                  padding: EdgeInsets.all(8),
+                  itemBuilder: (context, index, animation) {
+                    return ListTile(
+                      onTap: () {
+                        double lat = results[index].latitide;
+                        double lng = results[index].latitide;
+                        print('$lat $lng');
+                      },
+                      dense: true,
+                      title: Text(results[index].name),
+                    );
+                  });
+            }));
   }
 }
