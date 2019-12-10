@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 
 import 'city_helper.dart';
 
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -368,6 +369,19 @@ class _TeddyMapsState extends State<TeddyMaps> {
                         child: IconButton(icon: Icon(Icons.gps_fixed,
                           color: lightMode ? Colors.black87 : Colors.white,),
                           onPressed: _moveToMyPosition,),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ClipOval(
+                      child: Container(
+                        color: lightMode ? Colors.white70 : Colors.blueGrey,
+                        child: IconButton(icon: Icon(Icons.clear,
+                          color: lightMode ? Colors.black87 : Colors.white,),
+                          onPressed: () {
+                            _markers.clear();
+                          },),
                       ),
                     ),
                   ),

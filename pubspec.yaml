@@ -18,6 +18,7 @@ dependencies:
   provider:
   http:
   flutter_isolate: ^1.0.0+10
+  shared_preferences:
 
 
 
