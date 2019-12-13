@@ -95,7 +95,7 @@ class _TeddyMapsState extends State<TeddyMaps> {
   }
 
   void _markerButtonBluePressed() {
-    if (markerID == 12) {
+    if (markerID == 13) {
       print('More than 12 pins not supported');
       return;
     }
@@ -231,179 +231,200 @@ class _TeddyMapsState extends State<TeddyMaps> {
           )
         ],
       ),
-      drawer: Drawer(),
-      body: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: GoogleMap(
-              onCameraMove: _onCameraMove,
-              zoomGesturesEnabled: false,
-              markers: _markers,
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(
-                target: LatLng(12.9716, 77.5946),
-                zoom: _sliderValue,
-              ),
-              mapType: MapType.normal,
-              //myLocationEnabled: true,
-              //myLocationButtonEnabled: true,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: lightMode ? Colors.yellow : Colors.indigo,
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
+      body: AnimatedContainer(
+        duration: Duration(seconds: 10),
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: GoogleMap(
+                onCameraMove: _onCameraMove,
+                zoomGesturesEnabled: false,
+                markers: _markers,
+                onMapCreated: _onMapCreated,
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(12.9716, 77.5946),
+                  zoom: _sliderValue,
                 ),
-                width: 300,
-                height: 50,
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor:
-                    lightMode ? Colors.black87 : Colors.yellow,
-                    inactiveTrackColor: lightMode ? Colors.white : Colors.white,
-                    trackHeight: 4.0,
-                    thumbColor: lightMode ? Colors.blue : Colors.teal,
-                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.0),
-                    overlayColor: Colors.green.withAlpha(50),
-                    overlayShape: RoundSliderOverlayShape(overlayRadius: 14.0),
+                mapType: MapType.normal,
+                //myLocationEnabled: true,
+                //myLocationButtonEnabled: true,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: lightMode ? Colors.yellow : Colors.indigo,
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
                   ),
-                  child: Slider(
-                      value: _sliderValue,
-                      min: 5,
-                      max: 20,
-                      divisions: 10,
-                      onChanged: (double changedValue) {
-                        setState(() {
-                          _sliderValue = changedValue;
-                          mapController.animateCamera(
-                              CameraUpdate.newCameraPosition(CameraPosition(
-                                target: LatLng(_currentLocation.latitude,
-                                    _currentLocation.longitude),
-                                zoom: changedValue,
-                              )));
-                        });
-                      }),
+                  width: 300,
+                  height: 50,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor:
+                      lightMode ? Colors.black87 : Colors.yellow,
+                      inactiveTrackColor: lightMode ? Colors.white : Colors
+                          .white,
+                      trackHeight: 4.0,
+                      thumbColor: lightMode ? Colors.blue : Colors.teal,
+                      thumbShape: RoundSliderThumbShape(
+                          enabledThumbRadius: 8.0),
+                      overlayColor: Colors.green.withAlpha(50),
+                      overlayShape: RoundSliderOverlayShape(
+                          overlayRadius: 14.0),
+                    ),
+                    child: Slider(
+                        value: _sliderValue,
+                        min: 5,
+                        max: 20,
+                        divisions: 10,
+                        onChanged: (double changedValue) {
+                          setState(() {
+                            _sliderValue = changedValue;
+                            mapController.animateCamera(
+                                CameraUpdate.newCameraPosition(CameraPosition(
+                                  target: LatLng(_currentLocation.latitude,
+                                      _currentLocation.longitude),
+                                  zoom: changedValue,
+                                )));
+                          });
+                        }),
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 150, 8, 8),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ClipOval(
-                      child: Container(
-                        color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.lightbulb_outline,
-                            color: lightMode ? Colors.black : Colors.yellow,
-                            size: 32,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 150, 8, 8),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Column(
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: Container(
+                          color: lightMode ? Colors.white70 : Colors.blueGrey,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.lightbulb_outline,
+                              color: lightMode ? Colors.black : Colors.yellow,
+                              size: 32,
+                            ),
+                            onPressed: () {
+                              lightMode
+                                  ? _themeChanger.setTheme(ThemeData.dark())
+                                  : _themeChanger.setTheme(ThemeData.light());
+                              lightMode
+                                  ? rootBundle
+                                  .loadString('assets/map_style_dark.txt')
+                                  .then((string) {
+                                mapController.setMapStyle(string);
+                              })
+                                  : rootBundle
+                                  .loadString('assets/map_style_light.txt')
+                                  .then((string) {
+                                mapController.setMapStyle(string);
+                              });
+                              setState(() {});
+                            },
                           ),
-                          onPressed: () {
-                            lightMode
-                                ? _themeChanger.setTheme(ThemeData.dark())
-                                : _themeChanger.setTheme(ThemeData.light());
-                            lightMode
-                                ? rootBundle
-                                .loadString('assets/map_style_dark.txt')
-                                .then((string) {
-                              mapController.setMapStyle(string);
-                            })
-                                : rootBundle
-                                .loadString('assets/map_style_light.txt')
-                                .then((string) {
-                              mapController.setMapStyle(string);
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: Container(
+                          color: lightMode ? Colors.white70 : Colors.blueGrey,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.location_on,
+                              color: Colors.redAccent,
+                              size: 32,
+                            ),
+                            onPressed: _markerButtonRedPressed,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: Container(
+                          color: lightMode ? Colors.white70 : Colors.blueGrey,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.location_on,
+                              color: Colors.blueAccent,
+                              size: 32,
+                            ),
+                            onPressed: _markerButtonBluePressed,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: Container(
+                          color: lightMode ? Colors.white70 : Colors.blueGrey,
+                          child: IconButton(icon: Icon(Icons.gps_fixed,
+                            color: lightMode ? Colors.black87 : Colors.white,),
+                            onPressed: _moveToMyPosition,),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: InkWell(
+                          onTap: () {
+                            _markers = {};
+                            markerID = 1;
+                            setState(() {
+
                             });
-                            setState(() {});
                           },
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ClipOval(
-                      child: Container(
-                        color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.location_on,
-                            color: Colors.redAccent,
-                            size: 32,
+                          child: Container(
+                              width: 50,
+                              height: 50,
+                              color: lightMode ? Colors.white70 : Colors
+                                  .blueGrey,
+                              child: Center(
+                                child: Text(
+                                  'CLEAR ',
+                                  style: TextStyle(fontSize: 12,
+                                      color: lightMode ? Colors.black87 : Colors
+                                          .red),
+                                ),
+
+                              )
                           ),
-                          onPressed: _markerButtonRedPressed,
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ClipOval(
-                      child: Container(
-                        color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.location_on,
-                            color: Colors.blueAccent,
-                            size: 32,
-                          ),
-                          onPressed: _markerButtonBluePressed,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ClipOval(
-                      child: Container(
-                        color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: IconButton(icon: Icon(Icons.gps_fixed,
-                          color: lightMode ? Colors.black87 : Colors.white,),
-                          onPressed: _moveToMyPosition,),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ClipOval(
-                      child: Container(
-                        color: lightMode ? Colors.white70 : Colors.blueGrey,
-                        child: IconButton(icon: Icon(Icons.clear,
-                          color: lightMode ? Colors.black87 : Colors.white,),
-                          onPressed: () {
-                            _markers.clear();
-                          },),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Visibility(
-            visible: isMovingPosition,
-            child: Align(
-              alignment: Alignment.center,
-              child: Container(
-                color: Colors.white.withAlpha(100),
-                width: 50,
-                height: 50,
-                child: CircularProgressIndicator(
-                  backgroundColor: Colors.white,
+                  ],
                 ),
               ),
             ),
-          ),
-        ],
+            Visibility(
+              visible: isMovingPosition,
+              child: Align(
+                alignment: Alignment.center,
+                child: Container(
+                  color: Colors.white.withAlpha(100),
+                  width: 50,
+                  height: 50,
+                  child: CircularProgressIndicator(
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -458,7 +479,8 @@ class LocationsSearch extends SearchDelegate<String> {
   @override
   Widget buildResults(BuildContext context) {
     List<Cities> results = cityList
-        .where((cityName) => cityName.name.toLowerCase().contains(query))
+        .where((cityName) =>
+        cityName.name.toLowerCase().contains(query.toLowerCase()))
         .toList();
 
     return cityList.isEmpty
